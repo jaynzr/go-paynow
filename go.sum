@@ -9,8 +9,8 @@ github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZN
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.7.0 h1:nwc3DEeHmmLAfoZucVR881uASk0Mfjw8xYJ99tb5CcY=
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
-github.com/yeqown/go-qrcode v1.5.5 h1:FyuCdHZVNdpSITdRbIS/ogWXI20ulHhk7+KdWgExNkc=
-github.com/yeqown/go-qrcode v1.5.5/go.mod h1:C1eAU4Jure3vqD56kqzeSLaX84MHg3fZAMNID4nXX+Y=
+github.com/yeqown/go-qrcode v1.5.6 h1:2ZmXq0yFz/BZzNrkOPg4zao/cS1ROys3SM+I+sjk92M=
+github.com/yeqown/go-qrcode v1.5.6/go.mod h1:C1eAU4Jure3vqD56kqzeSLaX84MHg3fZAMNID4nXX+Y=
 github.com/yeqown/reedsolomon v1.0.0 h1:x1h/Ej/uJnNu8jaX7GLHBWmZKCAWjEJTetkqaabr4B0=
 github.com/yeqown/reedsolomon v1.0.0/go.mod h1:P76zpcn2TCuL0ul1Fso373qHRc69LKwAw/Iy6g1WiiM=
 golang.org/x/image v0.0.0-20200927104501-e162460cd6b5 h1:QelT11PB4FXiDEXucrfNckHoFxwt8USGY1ajP1ZF5lM=
