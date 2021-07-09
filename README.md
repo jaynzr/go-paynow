@@ -9,7 +9,6 @@ Uses [yeqown qrcode package](https://github.com/yeqown/go-qrcode) to generate qr
 ```golang
 import "github.com/jaynzr/go-paynow/paynow"
 
-// default qrcode generated in 1300px with PayNow logo
 payee := paynow.Payee{}
 
 jpg, err := payee.QRCode(12.35, "ABCDEFG")
