@@ -7,7 +7,7 @@ Uses [yeqown qrcode package](https://github.com/yeqown/go-qrcode) to generate qr
 
 ## Usage
 ```golang
-import "github.com/jaynzr/go-paynow/paynow"
+import "github.com/jaynzr/go-paynow"
 
 payee := paynow.Payee{}
 
@@ -20,7 +20,7 @@ Using custom logo, image attributes, expiry date, and image options
 ```golang
 
 import (
-    "github.com/jaynzr/go-paynow/paynow"
+    "github.com/jaynzr/go-paynow"
 	qrcode "github.com/yeqown/go-qrcode"
 )
 

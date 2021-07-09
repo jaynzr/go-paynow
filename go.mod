@@ -1,4 +1,4 @@
-module github.com/jaynzr/go-paynow/paynow
+module github.com/jaynzr/go-paynow
 
 go 1.16
 
