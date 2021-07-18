@@ -1,45 +1,30 @@
-package paynow
+package paynow_test
 
 import (
-	"net/http"
-	"os"
 	"testing"
 	"time"
 
-	qrcode "github.com/yeqown/go-qrcode"
+	"github.com/jaynzr/go-paynow"
 )
 
-func init() {
-	os.Remove("qrcode.png")
+func TestPayNowUEN(t *testing.T) {
+	want := "00020101021226520009SG.PAYNOW010120213S99345678ABCD03011040899991231520400005303702540512.345802SG5912ACME Pte Ltd6009Singapore62110107INV123463041E74"
+	payee := paynow.NewUEN("ACME Pte Ltd", "S99345678ABCD")
+	got := payee.New(12.34, "INV1234", true, time.Time{}).String()
+
+	if want != got {
+		t.Fatal("want", want, "got", got)
+	}
+	t.Log(got)
 }
 
-func TestPayNow(t *testing.T) {
-	payee := Payee{
-		MerchantName: "ACME Pte Ltd",
-		UEN:          "S99345678ABCD",
+func TestPayNowMobile(t *testing.T) {
+	want := "00020101021226500009SG.PAYNOW010100211+659099123403011040899991231520400005303702540512.345802SG5902NA6009Singapore62110107INV123463048AF5"
+	payee := paynow.NewMobile("+6590991234")
+	got := payee.New(12.34, "INV1234", true, time.Time{}).String()
+
+	if want != got {
+		t.Fatal("want", want, "got", got)
 	}
-
-	// see https://github.com/yeqown/go-qrcode#options for available ImageOptions
-	payee.Options = []qrcode.ImageOption{
-		// width of each qr block
-		qrcode.WithQRWidth(12),
-
-		// generates png format
-		qrcode.WithBuiltinImageEncoder(qrcode.PNG_FORMAT),
-	}
-
-	amount := float32(999.12)
-	ref := "ABCDEFG"
-	editable := false
-	expiry := time.Now()
-
-	jpg, err := payee.QRCodeExpiry(amount, ref, editable, expiry)
-	if err != nil {
-		t.Fatalf("could not create qrcode: %v", err)
-	}
-
-	ctype := http.DetectContentType(jpg)
-	if ctype != "image/png" {
-		t.Fatalf("invalid file format %s", ctype)
-	}
+	t.Log(got)
 }

@@ -2,68 +2,78 @@
 package paynow
 
 import (
-	"bytes"
 	"fmt"
 	"strings"
 	"time"
-
-	qrcode "github.com/yeqown/go-qrcode"
 )
-
-// QRSpec to set qrcode version
-type QRSpec struct {
-	Version int
-}
 
 // Payee struct, all fields are optional.
 type Payee struct {
 	MerchantName string
 	UEN          string
 	Mobile       string
-	Options      []qrcode.ImageOption
-	Spec         QRSpec // optional qrcode version
 }
 
-// QRCode returns editable qr code image
-func (pp *Payee) QRCode(amount float32, ref string) ([]byte, error) {
-	return pp.QRCodeExpiry(amount, ref, true, time.Time{})
+type payment struct {
+	expiry string
+	payee     *Payee
+	ref       string
+	amount    string
+	editable  string
 }
 
-// QRCodeLocked returns uneditable qr code image
-func (pp *Payee) QRCodeLocked(amount float32, ref string) ([]byte, error) {
-	return pp.QRCodeExpiry(amount, ref, false, time.Time{})
+func NewUEN(merchantName string, uen string) *Payee {
+	pp := &Payee{
+		MerchantName: merchantName, UEN: uen,
+	}
+	return pp
 }
 
-// QRCodeExpiry returns QR Code image, in jpeg format by default
-// expirySGT should be in Asia/Singapore timezone. If expirySGT is zero, perpetual
-func (pp *Payee) QRCodeExpiry(amount float32, ref string, editable bool, expirySGT time.Time) ([]byte, error) {
-	var (
-		buf bytes.Buffer
-		qrc *qrcode.QRCode
-		err error
-
-		editableFlag  = "1"
-		proxyTypeCode = "2"
-		proxyValue    = pp.UEN
-		expireDate    = "99991231"
-		name          = pp.MerchantName
-	)
-
-	if pp.Mobile != "" {
-		proxyTypeCode = "0"
-		proxyValue = pp.Mobile
+func NewMobile(mobile string) *Payee {
+	first := mobile[1]
+	if first == '8' || first == '9' {
+		mobile = "+65" + string(first)
+	} else if first != '+' {
+		panic("mobile must start with +, 9 or 8")
 	}
 
-	if name == "" {
-		name = "NA"
+	pp := &Payee{
+		Mobile: mobile,
+	}
+	return pp
+}
+
+func (pp *Payee) New(amount float32, ref string, editable bool, expirySGT time.Time) payment {
+	var (
+		editableFlag  = "1"
+		expireDate    = "99991231"
+	)
+
+	if !editable {
+		editableFlag = "0"
 	}
 
 	if !expirySGT.IsZero() {
 		expireDate = expirySGT.Format("20060102")
 	}
 
-	if !editable {
-		editableFlag = "0"
+	return payment{payee: pp, amount: fmt.Sprintf("%.2f", amount), ref: ref, editable: editableFlag, expiry: expireDate}
+}
+
+func (pp payment) String() string {
+	var (
+		proxyTypeCode = "2"
+		proxyValue    = pp.payee.UEN
+		name          = pp.payee.MerchantName
+	)
+
+	if pp.payee.Mobile != "" {
+		proxyTypeCode = "0"
+		proxyValue = pp.payee.Mobile
+	}
+
+	if name == "" {
+		name = "NA"
 	}
 
 	p := []*nameValue{
@@ -73,21 +83,21 @@ func (pp *Payee) QRCodeExpiry(amount float32, ref string, editable bool, expiryS
 			{id: "00", str: "SG.PAYNOW"},
 			{id: "01", str: proxyTypeCode},
 			{id: "02", str: proxyValue},
-			{id: "03", str: editableFlag}, // 1 = Payment amount is editable, 0 = Not Editable
-			{id: "04", str: expireDate},   // YYYYMMDD
+			{id: "03", str: pp.editable}, // 1 = Payment amount is editable, 0 = Not Editable
+			{id: "04", str: pp.expiry},   // YYYYMMDD
 		},
 		},
-		{id: "52", str: "0000"},                      // ID 52: Merchant Category Code (not used)
-		{id: "53", str: "702"},                       // ID 53: Currency. SGD is 702
-		{id: "54", str: fmt.Sprintf("%.2f", amount)}, // ID 54: Transaction Amount
-		{id: "58", str: "SG"},                        // ID 58: 2-letter Country Code (SG)
-		{id: "59", str: name},                        // ID 59: Company Name
-		{id: "60", str: "Singapore"},                 // ID 60: Merchant City
+		{id: "52", str: "0000"},                         // ID 52: Merchant Category Code (not used)
+		{id: "53", str: "702"},                          // ID 53: Currency. SGD is 702
+		{id: "54", str: pp.amount}, // ID 54: Transaction Amount
+		{id: "58", str: "SG"},                           // ID 58: 2-letter Country Code (SG)
+		{id: "59", str: name},                           // ID 59: Company Name
+		{id: "60", str: "Singapore"},                    // ID 60: Merchant City
 	}
 
-	if ref != "" {
+	if pp.ref != "" {
 		p = append(p, &nameValue{id: "62", nvs: []*nameValue{
-			{id: "01", str: ref},
+			{id: "01", str: pp.ref},
 		}})
 	}
 
@@ -96,22 +106,7 @@ func (pp *Payee) QRCodeExpiry(amount float32, ref string, editable bool, expiryS
 	checksum := crc16([]byte(sb.String()))
 	sb.WriteString(checksum)
 
-	if pp.Spec.Version != 0 {
-		qrc, err = qrcode.NewWithSpecV(sb.String(), pp.Spec.Version, qrcode.Medium, pp.Options...)
-	} else {
-		qrc, err = qrcode.New(sb.String(), pp.Options...)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	err = qrc.SaveTo(&buf)
-	if err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
+	return sb.String()
 }
 
 type nameValue struct {

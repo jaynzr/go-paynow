@@ -3,15 +3,28 @@
 # PayNow
 A Go package implementing QRCode generator for Singapore PayNow.
 
-Uses [yeqown qrcode package](https://github.com/yeqown/go-qrcode) to generate qrcodes.
+The main package implements the method to generate the value string for PayNow.
 
-## Usage
+Optional package `"github.com/jaynzr/go-paynow/qrcode"` uses [yeqown qrcode package](https://github.com/yeqown/go-qrcode) to generate qrcodes. You may use other qrcode generator.
+
+## Generating PayNow Value
 ```golang
+
 import "github.com/jaynzr/go-paynow"
 
-payee := paynow.Payee{}
+payee := paynow.NewUEN("ACME Pte Ltd", "S99345678ABCD")
+val : payee.New(12.34, "INV1234", true, time.Time{}).String()
 
-jpg, err := payee.QRCode(12.35, "ABCDEFG")
+
+```
+
+## QR Code Usage
+```golang
+import "github.com/jaynzr/go-paynow/qrcode"
+
+payee := qrcode.NewMobile("90991234")
+
+jpg, err := qrcode.QRCode(12.35, "ABCDEFG")
 ```
 
 To customize image output, append [qrcode.ImageOption](https://github.com/yeqown/go-qrcode#options) to Payee.Options
@@ -20,25 +33,22 @@ Using custom logo, image attributes, expiry date, and image options
 ```golang
 
 import (
-    "github.com/jaynzr/go-paynow"
-	qrcode "github.com/yeqown/go-qrcode"
+    "github.com/jaynzr/go-paynow/qrcode"
+	qrcopt "github.com/yeqown/go-qrcode"
 )
 
-payee := paynow.Payee{
-	MerchantName: "ACME Pte Ltd",
-	UEN:          "S99345678ABCD",
-}
+payee := qrcode.NewUEN("ACME Pte Ltd", "S99345678ABCD")
 
 // see https://github.com/yeqown/go-qrcode#options for available ImageOptions
-payee.Options = []qrcode.ImageOption{
+payee.Options = []qrcopt.ImageOption{
     // logo size should not be > 1/5 of qrcode.
-    qrcode.WithLogoImageFilePNG("logo.png"),
+    qrcopt.WithLogoImageFilePNG("logo.png"),
 
     // width of each qr block
-    qrcode.WithQRWidth(12),
+    qrcopt.WithQRWidth(12),
 
     // generates png format
-    qrcode.WithBuiltinImageEncoder(qrcode.PNG_FORMAT),
+    qrcopt.WithBuiltinImageEncoder(qrcopt.PNG_FORMAT),
 }
 
 amount := 12.35
@@ -46,7 +56,7 @@ ref := "ABCDEFG"
 editable := false
 expiry := time.Now().Add(time.Hour * 48)
 
-jpg, err := payee.QRCodeExpiry(amount, ref, editable, expiry)
+png, err := payee.QRCodeExpiry(amount, ref, editable, expiry)
 
 ```
 
