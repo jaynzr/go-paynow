@@ -28,3 +28,10 @@ func TestPayNowMobile(t *testing.T) {
 	}
 	t.Log(got)
 }
+
+func BenchmarkPN(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		payee := paynow.NewUEN("ACME Pte Ltd", "S99345678ABCD")
+		_ = payee.New(12.34, "INV1234", true, time.Time{}).String()
+	}
+}

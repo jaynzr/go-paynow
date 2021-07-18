@@ -12,25 +12,30 @@ type Payee struct {
 	MerchantName string
 	UEN          string
 	Mobile       string
+	size         int
 }
 
 type payment struct {
-	expiry string
-	payee     *Payee
-	ref       string
-	amount    string
-	editable  string
+	expiry   string
+	payee    *Payee
+	ref      string
+	amount   string
+	editable string
+	size     int
 }
 
+// NewUEN returns Payee with UEN
 func NewUEN(merchantName string, uen string) *Payee {
 	pp := &Payee{
 		MerchantName: merchantName, UEN: uen,
 	}
+	pp.size = len(merchantName) + len(uen) + 8
 	return pp
 }
 
+// NewMobile returns Payee with mobile
 func NewMobile(mobile string) *Payee {
-	first := mobile[1]
+	first := mobile[0]
 	if first == '8' || first == '9' {
 		mobile = "+65" + string(first)
 	} else if first != '+' {
@@ -38,15 +43,20 @@ func NewMobile(mobile string) *Payee {
 	}
 
 	pp := &Payee{
-		Mobile: mobile,
+		Mobile:       mobile,
+		MerchantName: "NA",
 	}
+
+	pp.size = len(mobile) + 10
+
 	return pp
 }
 
+// New returns a new payment
 func (pp *Payee) New(amount float32, ref string, editable bool, expirySGT time.Time) payment {
 	var (
-		editableFlag  = "1"
-		expireDate    = "99991231"
+		editableFlag = "1"
+		expireDate   = "99991231"
 	)
 
 	if !editable {
@@ -57,10 +67,15 @@ func (pp *Payee) New(amount float32, ref string, editable bool, expirySGT time.T
 		expireDate = expirySGT.Format("20060102")
 	}
 
-	return payment{payee: pp, amount: fmt.Sprintf("%.2f", amount), ref: ref, editable: editableFlag, expiry: expireDate}
+	p := payment{payee: pp, amount: fmt.Sprintf("%.2f", amount), ref: ref, editable: editableFlag, expiry: expireDate}
+	p.size = len(p.amount) + len(p.ref) + 25 // + 4 + 4 + len(p.editable) + 4 + len(p.expiry) + 4
+
+	return p
 }
 
+// String returns complete PayNow value + crc of payload
 func (pp payment) String() string {
+	const size = 80
 	var (
 		proxyTypeCode = "2"
 		proxyValue    = pp.payee.UEN
@@ -87,12 +102,12 @@ func (pp payment) String() string {
 			{id: "04", str: pp.expiry},   // YYYYMMDD
 		},
 		},
-		{id: "52", str: "0000"},                         // ID 52: Merchant Category Code (not used)
-		{id: "53", str: "702"},                          // ID 53: Currency. SGD is 702
-		{id: "54", str: pp.amount}, // ID 54: Transaction Amount
-		{id: "58", str: "SG"},                           // ID 58: 2-letter Country Code (SG)
-		{id: "59", str: name},                           // ID 59: Company Name
-		{id: "60", str: "Singapore"},                    // ID 60: Merchant City
+		{id: "52", str: "0000"},      // ID 52: Merchant Category Code (not used)
+		{id: "53", str: "702"},       // ID 53: Currency. SGD is 702
+		{id: "54", str: pp.amount},   // ID 54: Transaction Amount
+		{id: "58", str: "SG"},        // ID 58: 2-letter Country Code (SG)
+		{id: "59", str: name},        // ID 59: Company Name
+		{id: "60", str: "Singapore"}, // ID 60: Merchant City
 	}
 
 	if pp.ref != "" {
@@ -101,7 +116,7 @@ func (pp payment) String() string {
 		}})
 	}
 
-	sb := flatten(p)
+	sb := flatten(p, size+pp.payee.size+pp.size)
 	sb.WriteString("6304")
 	checksum := crc16([]byte(sb.String()))
 	sb.WriteString(checksum)
@@ -115,21 +130,24 @@ type nameValue struct {
 	nvs []*nameValue
 }
 
-func flatten(p []*nameValue) *strings.Builder {
+func flatten(p []*nameValue, size int) *strings.Builder {
 	var sb strings.Builder
-	sb.Grow(len(p) * 6)
+	if size > 0 {
+		sb.Grow(size)
+	}
 
 	for i := 0; i < len(p); i++ {
 		nv := p[i]
 
 		if len(nv.nvs) > 0 {
-			nv.str = flatten(nv.nvs).String()
+			nv.str = flatten(nv.nvs, 52).String()
 		}
 
 		sb.WriteString(nv.id)
 		sb.WriteString(fmt.Sprintf("%02d", len(nv.str)))
 		sb.WriteString(nv.str)
 	}
+	// fmt.Println("size", size, "len", len(sb.String()))
 	return &sb
 }
 
