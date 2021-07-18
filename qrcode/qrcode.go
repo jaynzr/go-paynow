@@ -24,14 +24,14 @@ type Payee struct {
 
 func NewUEN(merchantName string, uen string) *Payee {
 	pp := &Payee{
-		Payee: paynow.Payee{MerchantName: merchantName, UEN: uen},
+		Payee: *paynow.NewUEN(merchantName, uen),
 	}
 	return pp
 }
 
 func NewMobile(mobile string) *Payee {
 	pp := &Payee{
-		Payee: paynow.Payee{Mobile: mobile},
+		Payee: *paynow.NewMobile(mobile),
 	}
 	return pp
 }
